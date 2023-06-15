@@ -1,6 +1,5 @@
 #include "dhexchange.h"
 
-#include <inttypes.h>
 #include <stdlib.h>
 #include <memory.h>
 
@@ -10,19 +9,25 @@
 #define INLINE inline
 #endif
 
-/*--------------------------------------------------------------------------*/
-typedef union _uint128_t {
-	struct {
-		uint64_t low;
-		uint64_t high;
-	};
-	unsigned char byte[DH_KEY_LENGTH];
-} uint128_t;
-
 /* P =  2^128-159 = 0xffffffffffffffffffffffffffffff61 (The biggest 64bit prime) */
-static const uint128_t P = { 0xffffffffffffff61ULL, 0xffffffffffffffffULL };
-static const uint128_t INVERT_P = { 159 };
+//static const uint128_t P = { 0xffffffffffffff61ULL, 0xffffffffffffffffULL };
+//static const uint128_t INVERT_P = { 159 };
+
+// 009877c861e96928 24d844e137fb0303
+static uint128_t P = { 0x24d844e137fb0303ULL, 0x009877c861e96928ULL };
+static uint128_t INVERT_P = {0xDB27BB1EC804FCFDULL, 0xFF6788379E1696D7ULL };
+
 static const uint128_t G = { 5 };
+
+void setPrime(uint128_t prime)
+{
+	P = prime;
+}
+
+void setInversePrime(uint128_t iprime)
+{
+	INVERT_P = iprime;
+}
 
 /*--------------------------------------------------------------------------*/
 static void INLINE
@@ -178,7 +183,7 @@ _powmodp(uint128_t* r, uint128_t a, uint128_t b)
 }
 
 /*--------------------------------------------------------------------------*/
-void DH_generate_key_pair(DH_KEY public_key, DH_KEY private_key)
+void DH_generate_key_pair(DH_KEY public_key, DH_KEY private_key, const uint8_t* key, const int len)
 {
 	uint128_t private_k;
 	uint128_t public_k;
@@ -186,7 +191,10 @@ void DH_generate_key_pair(DH_KEY public_key, DH_KEY private_key)
 	/* generate random private key */
 	int i;
 	for (i = 0; i < DH_KEY_LENGTH; i++) {
-		private_key[i] = rand() & 0xFF;
+		if(len == DH_KEY_LENGTH)
+			private_key[i] = key[i];
+		else
+			private_key[i] = rand() & 0xFF;
 	}
 
 	/* pub_key = G^prv_key mod P*/
